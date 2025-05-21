@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthBooker - Doctor Appointments</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home') }}">
+                <i class="fas fa-heartbeat me-2"></i>HealthBooker
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('doctors') }}">Doctors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('doctor_appointments') }}">Appointments</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('profile') }}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('contact') }}">Contact</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <!-- Theme Toggle -->
+                    <div class="theme-toggle me-3" id="theme-toggle"></div>
+                    
+                    <!-- Authentication Links -->
+                    <div class="ms-3">
+                        <div class="dropdown">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle me-1"></i> {{ current_user.name }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div id="alert-container"></div>
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        <div class="container py-5">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h2><i class="fas fa-calendar-check me-2"></i>Manage Appointments</h2>
+                    <p class="lead">View and update the status of your patient appointments</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <ul class="nav nav-tabs mb-4" id="appointmentTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pending" type="button" role="tab" aria-controls="pending" aria-selected="true">
+                                Pending
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="in-progress-tab" data-bs-toggle="tab" data-bs-target="#in-progress" type="button" role="tab" aria-controls="in-progress" aria-selected="false">
+                                In Progress
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab" aria-controls="completed" aria-selected="false">
+                                Completed
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="cancelled-tab" data-bs-toggle="tab" data-bs-target="#cancelled" type="button" role="tab" aria-controls="cancelled" aria-selected="false">
+                                Cancelled
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="appointmentTabsContent">
+                        <!-- Pending Appointments -->
+                        <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
+                            {% set pending_appointments = appointments|selectattr('status', 'equalto', 'Pending')|list %}
+                            {% if pending_appointments %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Patient</th>
+                                                <th>Appointment Date</th>
+                                                <th>Appointment Time</th>
+                                                <th>Booking Date</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for appointment in pending_appointments %}
+                                                <tr data-appointment-id="{{ appointment.id }}">
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="{{ url_for('static', filename='images/uploads/' + appointment.patient.profile_image) }}" 
+                                                                alt="{{ appointment.patient.name }}" 
+                                                                class="rounded-circle me-2" 
+                                                                style="width: 40px; height: 40px; object-fit: cover;">
+                                                            <div>{{ appointment.patient.name }}</div>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ appointment.appointment_date.strftime('%B %d, %Y') }}</td>
+                                                    <td>{{ appointment.appointment_time.strftime('%I:%M %p') }}</td>
+                                                    <td>{{ appointment.booking_date.strftime('%B %d, %Y') }}</td>
+                                                    <td>
+                                                        <span class="badge badge-pending" id="status-{{ appointment.id }}">
+                                                            {{ appointment.status }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="btn-group">
+                                                            <button class="btn btn-sm btn-info" onclick="updateAppointmentStatus({{ appointment.id }}, 'In Progress')">
+                                                                Start
+                                                            </button>
+                                                            <button class="btn btn-sm btn-success" onclick="updateAppointmentStatus({{ appointment.id }}, 'Completed')">
+                                                                Complete
+                                                            </button>
+                                                            <button class="btn btn-sm btn-danger" onclick="updateAppointmentStatus({{ appointment.id }}, 'Cancelled')">
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-clipboard-check fa-4x text-muted mb-3"></i>
+                                    <h3>No pending appointments</h3>
+                                    <p>You don't have any pending appointments at the moment.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- In Progress Appointments -->
+                        <div class="tab-pane fade" id="in-progress" role="tabpanel" aria-labelledby="in-progress-tab">
+                            {% set in_progress_appointments = appointments|selectattr('status', 'equalto', 'In Progress')|list %}
+                            {% if in_progress_appointments %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Patient</th>
+                                                <th>Appointment Date</th>
+                                                <th>Appointment Time</th>
+                                                <th>Booking Date</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for appointment in in_progress_appointments %}
+                                                <tr data-appointment-id="{{ appointment.id }}">
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="{{ url_for('static', filename='images/uploads/' + appointment.patient.profile_image) }}" 
+                                                                alt="{{ appointment.patient.name }}" 
+                                                                class="rounded-circle me-2" 
+                                                                style="width: 40px; height: 40px; object-fit: cover;">
+                                                            <div>{{ appointment.patient.name }}</div>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ appointment.appointment_date.strftime('%B %d, %Y') }}</td>
+                                                    <td>{{ appointment.appointment_time.strftime('%I:%M %p') }}</td>
+                                                    <td>{{ appointment.booking_date.strftime('%B %d, %Y') }}</td>
+                                                    <td>
+                                                        <span class="badge badge-in-progress" id="status-{{ appointment.id }}">
+                                                            {{ appointment.status }}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="btn-group">
+                                                            <button class="btn btn-sm btn-success" onclick="updateAppointmentStatus({{ appointment.id }}, 'Completed')">
+                                                                Complete
+                                                            </button>
+                                                            <button class="btn btn-sm btn-danger" onclick="updateAppointmentStatus({{ appointment.id }}, 'Cancelled')">
+                                                                Cancel
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-clipboard-check fa-4x text-muted mb-3"></i>
+                                    <h3>No in-progress appointments</h3>
+                                    <p>You don't have any appointments in progress at the moment.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Completed Appointments -->
+                        <div class="tab-pane fade" id="completed" role="tabpanel" aria-labelledby="completed-tab">
+                            {% set completed_appointments = appointments|selectattr('status', 'equalto', 'Completed')|list %}
+                            {% if completed_appointments %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Patient</th>
+                                                <th>Appointment Date</th>
+                                                <th>Appointment Time</th>
+                                                <th>Booking Date</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for appointment in completed_appointments %}
+                                                <tr data-appointment-id="{{ appointment.id }}">
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="{{ url_for('static', filename='images/uploads/' + appointment.patient.profile_image) }}" 
+                                                                alt="{{ appointment.patient.name }}" 
+                                                                class="rounded-circle me-2" 
+                                                                style="width: 40px; height: 40px; object-fit: cover;">
+                                                            <div>{{ appointment.patient.name }}</div>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ appointment.appointment_date.strftime('%B %d, %Y') }}</td>
+                                                    <td>{{ appointment.appointment_time.strftime('%I:%M %p') }}</td>
+                                                    <td>{{ appointment.booking_date.strftime('%B %d, %Y') }}</td>
+                                                    <td>
+                                                        <span class="badge badge-completed" id="status-{{ appointment.id }}">
+                                                            {{ appointment.status }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-clipboard-check fa-4x text-muted mb-3"></i>
+                                    <h3>No completed appointments</h3>
+                                    <p>You don't have any completed appointments yet.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Cancelled Appointments -->
+                        <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
+                            {% set cancelled_appointments = appointments|selectattr('status', 'equalto', 'Cancelled')|list %}
+                            {% if cancelled_appointments %}
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Patient</th>
+                                                <th>Appointment Date</th>
+                                                <th>Appointment Time</th>
+                                                <th>Booking Date</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for appointment in cancelled_appointments %}
+                                                <tr data-appointment-id="{{ appointment.id }}">
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="{{ url_for('static', filename='images/uploads/' + appointment.patient.profile_image) }}" 
+                                                                alt="{{ appointment.patient.name }}" 
+                                                                class="rounded-circle me-2" 
+                                                                style="width: 40px; height: 40px; object-fit: cover;">
+                                                            <div>{{ appointment.patient.name }}</div>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ appointment.appointment_date.strftime('%B %d, %Y') }}</td>
+                                                    <td>{{ appointment.appointment_time.strftime('%I:%M %p') }}</td>
+                                                    <td>{{ appointment.booking_date.strftime('%B %d, %Y') }}</td>
+                                                    <td>
+                                                        <span class="badge badge-cancelled" id="status-{{ appointment.id }}">
+                                                            {{ appointment.status }}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <div class="text-center py-5">
+                                    <i class="fas fa-clipboard-check fa-4x text-muted mb-3"></i>
+                                    <h3>No cancelled appointments</h3>
+                                    <p>You don't have any cancelled appointments.</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-heartbeat me-2"></i>HealthBooker</h5>
+                    <p>Connecting patients with healthcare professionals for better health outcomes.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('home') }}">Home</a></li>
+                        <li><a href="{{ url_for('doctors') }}">Doctors</a></li>
+                        <li><a href="{{ url_for('contact') }}">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Contact</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-map-marker-alt me-2"></i>123 Health St, Medical City</li>
+                        <li><i class="fas fa-phone me-2"></i>(123) 456-7890</li>
+                        <li><i class="fas fa-envelope me-2"></i>info@healthbooker.com</li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2025 HealthBooker. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    
+    <script>
+        function updateAppointmentStatus(appointmentId, newStatus) {
+            // Store the current active tab before update
+            const activeTab = document.querySelector('.tab-pane.active');
+            const activeTabId = activeTab ? activeTab.id : 'pending';
+            localStorage.setItem('activeAppointmentTab', activeTabId);
+            
+            // First update the status via AJAX
+            fetch('/update-appointment-status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    appointment_id: appointmentId,
+                    status: newStatus
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message
+                    const alertContainer = document.getElementById('alert-container');
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-success alert-dismissible fade show">
+                            Appointment status updated successfully!
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+
+                    // Force reload the page after a short delay
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+
+                } else {
+                    // Show error message
+                    const alertContainer = document.getElementById('alert-container');
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            ${data.message || 'Failed to update appointment status.'}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                const alertContainer = document.getElementById('alert-container');
+                alertContainer.innerHTML = `
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        An error occurred while updating the appointment status.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                `;
+            });
+        }
+
+        // Function to fetch and update appointments for a specific tab
+        function fetchAndUpdateTabContent(tabId) {
+            fetch('/get-appointments')
+                .then(response => response.json())
+                .then(appointments => {
+                    const tabPane = document.getElementById(tabId);
+                    if (tabPane) {
+                        // Convert tab ID to status format for comparison
+                        const statusMap = {
+                            'pending': 'Pending',
+                            'in-progress': 'In Progress',
+                            'completed': 'Completed',
+                            'cancelled': 'Cancelled'
+                        };
+                        const status = statusMap[tabId];
+                        
+                        // Filter appointments by exact status match
+                        const filteredAppointments = appointments.filter(apt => apt.status === status);
+                        
+                        const tableHtml = tabId === 'completed' || tabId === 'cancelled' ? `
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Patient</th>
+                                        <th>Appointment Date</th>
+                                        <th>Appointment Time</th>
+                                        <th>Booking Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${filteredAppointments.map(apt => `
+                                        <tr data-appointment-id="${apt.id}">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img src="/static/images/uploads/${apt.patient.profile_image}" 
+                                                        alt="${apt.patient.name}" 
+                                                        class="rounded-circle me-2" 
+                                                        style="width: 40px; height: 40px; object-fit: cover;">
+                                                    <div>${apt.patient.name}</div>
+                                                </div>
+                                            </td>
+                                            <td>${new Date(apt.appointment_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
+                                            <td>${new Date('2000-01-01T' + apt.appointment_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</td>
+                                            <td>${new Date(apt.booking_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
+                                            <td>
+                                                <span class="badge badge-${tabId}" id="status-${apt.id}">
+                                                    ${apt.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        ` : `
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Patient</th>
+                                        <th>Appointment Date</th>
+                                        <th>Appointment Time</th>
+                                        <th>Booking Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${filteredAppointments.map(apt => `
+                                        <tr data-appointment-id="${apt.id}">
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <img src="/static/images/uploads/${apt.patient.profile_image}" 
+                                                        alt="${apt.patient.name}" 
+                                                        class="rounded-circle me-2" 
+                                                        style="width: 40px; height: 40px; object-fit: cover;">
+                                                    <div>${apt.patient.name}</div>
+                                                </div>
+                                            </td>
+                                            <td>${new Date(apt.appointment_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
+                                            <td>${new Date('2000-01-01T' + apt.appointment_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</td>
+                                            <td>${new Date(apt.booking_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</td>
+                                            <td>
+                                                <span class="badge badge-${tabId}" id="status-${apt.id}">
+                                                    ${apt.status}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    ${tabId === 'pending' ? `
+                                                        <button class="btn btn-sm btn-info" onclick="updateAppointmentStatus(${apt.id}, 'In Progress')">
+                                                            Start
+                                                        </button>
+                                                        <button class="btn btn-sm btn-success" onclick="updateAppointmentStatus(${apt.id}, 'Completed')">
+                                                            Complete
+                                                        </button>
+                                                        <button class="btn btn-sm btn-danger" onclick="updateAppointmentStatus(${apt.id}, 'Cancelled')">
+                                                            Cancel
+                                                        </button>
+                                                    ` : tabId === 'in-progress' ? `
+                                                        <button class="btn btn-sm btn-success" onclick="updateAppointmentStatus(${apt.id}, 'Completed')">
+                                                            Complete
+                                                        </button>
+                                                        <button class="btn btn-sm btn-danger" onclick="updateAppointmentStatus(${apt.id}, 'Cancelled')">
+                                                            Cancel
+                                                        </button>
+                                                    ` : ''}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        `;
+
+                        const tableContainer = tabPane.querySelector('.table-responsive');
+                        if (tableContainer) {
+                            if (filteredAppointments.length === 0) {
+                                tableContainer.innerHTML = `
+                                    <div class="text-center py-5">
+                                        <i class="fas fa-clipboard-check fa-4x text-muted mb-3"></i>
+                                        <h3>No ${status} appointments</h3>
+                                        <p>You don't have any ${status} appointments at the moment.</p>
+                                    </div>
+                                `;
+                            } else {
+                                tableContainer.innerHTML = tableHtml;
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching appointments:', error);
+                    const alertContainer = document.getElementById('alert-container');
+                    alertContainer.innerHTML = `
+                        <div class="alert alert-danger alert-dismissible fade show">
+                            An error occurred while fetching appointments.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `;
+                });
+        }
+
+        // Add event listeners for tab changes when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add click event listeners to all tab buttons
+            document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tabButton => {
+                tabButton.addEventListener('shown.bs.tab', function (e) {
+                    const targetId = e.target.getAttribute('data-bs-target').substring(1);
+                    localStorage.setItem('activeAppointmentTab', targetId);
+                    fetchAndUpdateTabContent(targetId);
+                });
+            });
+
+            // Initial fetch for all tabs
+            ['pending', 'in-progress', 'completed', 'cancelled'].forEach(tabId => {
+                fetchAndUpdateTabContent(tabId);
+            });
+
+            // Restore the active tab if it exists in localStorage
+            const activeTabId = localStorage.getItem('activeAppointmentTab');
+            if (activeTabId) {
+                const tabButton = document.querySelector(`button[data-bs-target="#${activeTabId}"]`);
+                if (tabButton) {
+                    tabButton.click();
+                }
+            }
+
+            // Set up periodic refresh for all tabs
+            setInterval(() => {
+                const activeTab = document.querySelector('.tab-pane.active');
+                if (activeTab) {
+                    const tabId = activeTab.id;
+                    fetchAndUpdateTabContent(tabId);
+                }
+            }, 5000); // Refresh every 5 seconds
+        });
+    </script>
+</body>
+</html>

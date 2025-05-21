@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HealthBooker - {% block title %}Home{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block additional_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home') }}">
+                <i class="fas fa-heartbeat me-2"></i>HealthBooker
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('home') %}active{% endif %}" href="{{ url_for('home') }}">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('doctors') %}active{% endif %}" href="{{ url_for('doctors') }}">Doctors</a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.user_type == 'user' %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('user_appointments') %}active{% endif %}" href="{{ url_for('user_appointments') }}">Appointments</a>
+                        </li>
+                        {% elif current_user.user_type == 'doctor' %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('doctor_appointments') %}active{% endif %}" href="{{ url_for('doctor_appointments') }}">Appointments</a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.path == url_for('profile') %}active{% endif %}" href="{{ url_for('profile') }}">Profile</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == url_for('contact') %}active{% endif %}" href="{{ url_for('contact') }}">Contact</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center">
+                    <!-- Theme Toggle -->
+                    <div class="theme-toggle me-3" id="theme-toggle"></div>
+                    
+                    <!-- Authentication Links -->
+                    <div class="ms-3">
+                        {% if current_user.is_authenticated %}
+                            <div class="dropdown">
+                                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user-circle me-1"></i> {{ current_user.name }}
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                                </ul>
+                            </div>
+                        {% else %}
+                            <a href="{{ url_for('login') }}" class="btn btn-outline-primary me-2"><i class="fas fa-sign-in-alt me-2"></i>Login</a>
+                            <a href="{{ url_for('register') }}" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i>Register</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main>
+        {% block content %}
+        <!-- Banner Section -->
+        <section class="banner">
+            <div class="container">
+                <div class="row align-items-center">
+                    <div class="col-lg-6">
+                        <h1>Your Health, Our Priority</h1>
+                        <p class="lead">Book appointments with top healthcare professionals with just a few clicks.</p>
+                        {% if not current_user.is_authenticated %}
+                            <div class="mt-4">
+                                <a href="{{ url_for('register') }}" class="btn btn-light btn-lg me-2"><i class="fas fa-user-plus me-2"></i>Get Started</a>
+                                <a href="{{ url_for('doctors') }}" class="btn btn-outline-light btn-lg"><i class="fas fa-search me-2"></i>Find Doctors</a>
+                            </div>
+                        {% else %}
+                            <div class="mt-4">
+                                <a href="{{ url_for('doctors') }}" class="btn btn-light btn-lg"><i class="fas fa-search me-2"></i>Find Doctors</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-lg-2" style="display: none;">
+                        <img src="{{ url_for('static', filename='images/banner-image.png') }}" alt="Healthcare Professionals" class="img-fluid rounded shadow">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Welcome Section -->
+        <section class="py-5">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center mb-4">
+                        {% if current_user.is_authenticated %}
+                            <h2>Welcome back, {{ current_user.name }}!</h2>
+                            <p class="lead">
+                                {% if current_user.user_type == 'user' %}
+                                    Manage your healthcare appointments and find the right specialists for your needs.
+                                {% else %}
+                                    Manage your appointments and patient schedule efficiently.
+                                {% endif %}
+                            </p>
+                        {% else %}
+                            <h2>Welcome to HealthBooker</h2>
+                            <p class="lead">Your one-stop platform for healthcare appointment management.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4><i class="fas fa-star me-2"></i>Main Features</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="feature-icon me-4">
+                                                <i class="fas fa-user-md fa-3x text-primary"></i>
+                                            </div>
+                                            <div>
+                                                <h5>Expert Doctors</h5>
+                                                <p class="mb-0">Access to specialized healthcare professionals</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="feature-icon me-4">
+                                                <i class="fas fa-calendar-check fa-3x text-success"></i>
+                                            </div>
+                                            <div>
+                                                <h5>Easy Booking</h5>
+                                                <p class="mb-0">Simple appointment scheduling process</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="feature-icon me-3">
+                                                <i class="fas fa-history fa-3x text-info"></i>
+                                            </div>
+                                            <div>
+                                                <h5>Track History</h5>
+                                                <p class="mb-0">Monitor your appointment history</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="feature-icon me-2">
+                                                <i class="fas fa-user-shield fa-3x text-warning"></i>
+                                            </div>
+                                            <div>
+                                                <h5>Secure Profiles</h5>
+                                                <p class="mb-0">Protected personal information</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h4><i class="fas fa-clipboard-list me-2"></i>Appointment History</h4>
+                            </div>
+                            <div class="card-body" style="height: 320px;">
+                                {% if current_user.is_authenticated %}
+                                    {% if current_user.user_type == 'user' and current_user.appointments_as_user %}
+                                        <div class="row">
+                                            {% for appointment in current_user.appointments_as_user[:3] %}
+                                                <div class="col-md-12 mb-3">
+                                                    <div class="card">
+                                                        <div class="card-body">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <h5 class="mb-1">Dr. {{ appointment.doctor.user.name }}</h5>
+                                                                    <p class="mb-1 text-muted">{{ appointment.appointment_date.strftime('%B %d, %Y') }} at {{ appointment.appointment_time.strftime('%I:%M %p') }}</p>
+                                                                </div>
+                                                                <span class="badge badge-{{ appointment.status.lower() }}">{{ appointment.status }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                            <div class="text-center mt-2">
+                                                <a href="{{ url_for('user_appointments') }}" class="btn btn-outline-primary"><i class="fas fa-calendar-check me-2"></i>View All Appointments</a>
+                                            </div>
+                                        </div>
+                                    {% elif current_user.user_type == 'doctor' %}
+                                        {% set doctor = current_user.doctor_profile[0] if current_user.doctor_profile else None %}
+                                        {% if doctor and doctor.appointments %}
+                                            <div class="row">
+                                                {% for appointment in doctor.appointments[:3] %}
+                                                    <div class="col-md-12 mb-3">
+                                                        <div class="card">
+                                                            <div class="card-body">
+                                                                <div class="d-flex justify-content-between align-items-center">
+                                                                    <div>
+                                                                        <h5 class="mb-1">{{ appointment.patient.name }}</h5>
+                                                                        <p class="mb-1 text-muted">{{ appointment.appointment_date.strftime('%B %d, %Y') }} at {{ appointment.appointment_time.strftime('%I:%M %p') }}</p>
+                                                                    </div>
+                                                                    <span class="badge badge-{{ appointment.status.lower() }}">{{ appointment.status }}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                                <div class="text-center mt-2">
+                                                    <a href="{{ url_for('doctor_appointments') }}" class="btn btn-outline-primary">View All Appointments</a>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <div class="text-center py-4">
+                                                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                                                <p>No appointments scheduled yet.</p>
+                                            </div>
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="text-center py-4">
+                                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                                            <p>No appointments scheduled yet.</p>
+                                            <a href="{{ url_for('doctors') }}" class="btn btn-primary">Find Doctors</a>
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-user-lock fa-3x text-muted mb-3"></i>
+                                        <p>Please log in to view your appointment history.</p>
+                                        <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Specializations Section -->
+        <section class="py-5 bg-light">
+            <div class="container">
+                <div class="row">
+                    <div class="col-12 text-center mb-4">
+                        <h2>Our Specializations</h2>
+                        <p class="lead">Find the right specialist for your healthcare needs</p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-heartbeat fa-3x text-primary mb-3"></i>
+                                <h4>Cardiology</h4>
+                                <p>Expert care for heart-related conditions and treatments.</p>
+                                <a href="{{ url_for('doctors') }}?specialization=Cardiology" class="btn btn-outline-primary"><i class="fas fa-stethoscope me-2"></i>Find Cardiologists</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-eye fa-3x text-primary mb-3"></i>
+                                <h4>Ophthalmology</h4>
+                                <p>Specialized care for eye conditions and vision problems.</p>
+                                <a href="{{ url_for('doctors') }}?specialization=Ophthalmology" class="btn btn-outline-primary"><i class="fas fa-glasses me-2"></i>Find Ophthalmologists</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-bone fa-3x text-primary mb-3"></i>
+                                <h4>Orthopedics</h4>
+                                <p>Treatment for bone and joint conditions and injuries.</p>
+                                <a href="{{ url_for('doctors') }}?specialization=Orthopedics" class="btn btn-outline-primary"><i class="fas fa-bone me-2"></i>Find Orthopedists</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-brain fa-3x text-primary mb-3"></i>
+                                <h4>Neurology</h4>
+                                <p>Expert care for brain, nerve, and spinal cord disorders.</p>
+                                <a href="{{ url_for('doctors') }}?specialization=Neurology" class="btn btn-outline-primary"><i class="fas fa-brain me-2"></i>Find Neurologists</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-child fa-3x text-primary mb-3"></i>
+                                <h4>Pediatrics</h4>
+                                <p>Specialized healthcare for infants, children, and adolescents.</p>
+                                <a href="{{ url_for('doctors') }}?specialization=Pediatrics" class="btn btn-outline-primary"><i class="fas fa-baby me-2"></i>Find Pediatricians</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-4">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-allergies fa-3x text-primary mb-3"></i>
+                                <h4>Dermatology</h4>
+                                <p>Treatment for skin, hair, and nail conditions.</p>
+                                <a href="{{ url_for('doctors') }}?specialization=Dermatology" class="btn btn-outline-primary"><i class="fas fa-allergies me-2"></i>Find Dermatologists</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        {% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="fas fa-heartbeat me-2"></i>HealthBooker</h5>
+                    <p>Connecting patients with healthcare professionals for better health outcomes.</p>
+                </div>
+                <div class="col-md-3">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="{{ url_for('home') }}">Home</a></li>
+                        <li><a href="{{ url_for('doctors') }}">Doctors</a></li>
+                        <li><a href="{{ url_for('contact') }}">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5>Contact</h5>
+                    <ul class="list-unstyled">
+                        <li><i class="fas fa-map-marker-alt me-2"></i>123 Health St, Medical City</li>
+                        <li><i class="fas fa-phone me-2"></i>(123) 456-7890</li>
+                        <li><i class="fas fa-envelope me-2"></i>info@healthbooker.com</li>
+                    </ul>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2025 HealthBooker. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block additional_js %}{% endblock %}
+</body>
+</html>

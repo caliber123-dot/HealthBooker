@@ -15,10 +15,13 @@ def save_picture(form_picture):
     picture_path = os.path.join(app.root_path, 'static/images/uploads', picture_fn)
     
     # Resize image
-    output_size = (150, 150)
+    output_size = (250, 250)
     i = Image.open(form_picture)
-    i.thumbnail(output_size)
-    i.save(picture_path)
+    # i.thumbnail(output_size)
+    # # i.save(picture_path)    
+    # i = i.convert("RGB")  # Ensure consistent format (avoids .png with transparency issues)
+    i.thumbnail(output_size, Image.Resampling.LANCZOS)
+    i.save(picture_path, quality=95, optimize=True)  # High quality and optimized
     
     return picture_fn
 

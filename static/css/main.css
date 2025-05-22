@@ -262,6 +262,7 @@ body {
   border-radius: 25px;
   position: relative;
   transition: all 0.3s ease;
+  color: white;
 }
 
 .dark-theme .theme-toggle {
@@ -475,4 +476,28 @@ footer {
   background-color: rgba(246, 194, 62, 0.1);
   border-color: rgba(246, 194, 62, 0.2);
   color: var(--warning-color);
+}
+
+
+.dark-theme body,
+.dark-theme p,
+.dark-theme span,
+.dark-theme h1,
+.dark-theme h2,
+.dark-theme h3,
+.dark-theme h4,
+.dark-theme h5,
+.dark-theme h6,
+.dark-theme label,
+.dark-theme li,
+/* .dark-theme a, */
+.dark-theme div,
+.dark-theme th,
+.dark-theme td {
+  /* color: var(--body-color) !important; */
+  color: white !important;
+}
+
+.dark-theme a:hover {
+  color: var(--primary-color) !important;
 }

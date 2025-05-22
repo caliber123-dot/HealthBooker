@@ -489,11 +489,11 @@ footer {
 .dark-theme h5,
 .dark-theme h6,
 .dark-theme label,
-.dark-theme li,
+.dark-theme li
 /* .dark-theme a, */
-.dark-theme div,
-.dark-theme th,
-.dark-theme td {
+/* .dark-theme th,
+.dark-theme td  */
+{
   /* color: var(--body-color) !important; */
   color: white !important;
 }

@@ -147,7 +147,7 @@
                         <div class="card doctor-card">
                             <img height="42" src="{{ url_for('static', filename='images/uploads/' + doctor.user.profile_image) }}" class="card-img-top" alt="{{ doctor.user.name }}">
                             <div class="doctor-info">
-                                <h5 class="doctor-name">Dr. {{ doctor.user.name }}</h5>
+                                <h5 class="doctor-name"> {{ doctor.user.name }}</h5>
                                 <div class="doctor-specialization">{{ doctor.specialization }}</div>
                                 <div class="doctor-details">
                                     <p><i class="fas fa-briefcase me-2"></i> {{ doctor.experience }} years experience</p>

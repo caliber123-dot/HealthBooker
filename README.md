@@ -1,8 +1,13 @@
 # HealthBooker - Healthcare Appointment Platform
 
+<h3>📝 Description :</h3> 
 HealthBooker is a comprehensive healthcare platform designed to connect users with doctors and streamline the appointment booking process. The application provides a modern web interface for managing healthcare interactions with robust features for both users and doctors.
 
-## Features
+<h3>🌐 Web Link:</h3>
+
+<h4> Live Site: https://healthbookerapp.onrender.com/ </h4>
+
+### 📃 Features :
 
 ### User/Doctor Registration and Authentication
 - Full signup and login functionality
@@ -45,7 +50,7 @@ HealthBooker is a comprehensive healthcare platform designed to connect users wi
 - Light and dark theme toggle
 - Responsive design with modern styling
 
-## Technology Stack
+## 🛠️ Technology Stack
 - Backend: Python Flask
 - Frontend: HTML, CSS, JavaScript, Bootstrap, AJAX
 - Database: SQLite
@@ -83,5 +88,6 @@ Health-Book-app/
     README.md
 ```
 
-## License
+## 🛡️ License
 This project is for educational purposes only.
+
